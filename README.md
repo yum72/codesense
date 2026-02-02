@@ -1,5 +1,10 @@
 # CodeSense
 
+> [!WARNING]
+> **WORK IN PROGRESS - NOT READY FOR PRODUCTION USE YET**
+>
+> This project is under active development. APIs and configurations are subject to change.
+
 **Your codebase's local brain.**
 
 CodeSense is an AI-powered codebase understanding engine that runs entirely on your machine. It creates a comprehensive index of your code and exposes it via [MCP (Model Context Protocol)](https://modelcontextprotocol.io/), enabling AI assistants like Claude and Cursor to understand your project deeply before writing a single line of code.
