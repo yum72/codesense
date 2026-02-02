@@ -1,37 +1,84 @@
 import path from 'node:path';
-import { SQLiteAdapter } from './db/adapter.js';
-import { CodebaseScanner } from './core/scanner.js';
+import { createMemgraphAdapter } from './db/memgraph-adapter.js';
+import { createIndexManager } from './indexing/index-manager.js';
+import { loadConfig } from './utils/config.js';
+import { createCodeSenseServer } from './mcp/server.js';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 async function main() {
-  // 1. Parse arguments (default to current directory)
   const args = process.argv.slice(2);
-  const targetDir = args[0] ? path.resolve(args[0]) : process.cwd();
+  const command = args[0];
+  const targetDir = args[1] ? path.resolve(args[1]) : process.cwd();
 
-  console.log('🚀 Starting CodeSense...');
-
-  // 2. Initialize Database
-  const db = new SQLiteAdapter();
+  // Load configuration
+  const { effectiveConfig, warnings } = loadConfig({ startDir: targetDir });
   
-  // 3. Run Scanner (Tier 0)
-  const scanner = new CodebaseScanner(db, targetDir);
-  
-  try {
-    const changedFiles = await scanner.scan();
-
-    // 4. Future: Pass changedFiles to Tier 1 Parser
-    if (changedFiles.length > 0) {
-      console.log('📝 Next Step: These files would be sent to Tree-sitter for parsing.');
-      // await parser.parseFiles(changedFiles);
-    } else {
-      console.log('✨ No changes detected. Index is up to date.');
-    }
-
-  } catch (error) {
-    console.error('❌ Application Error:', error);
-  } finally {
-    // Ideally keep the DB open if building a server, but close for CLI one-off run
-    // db.close(); 
+  if (warnings.length > 0) {
+    console.error('Configuration warnings:');
+    warnings.forEach(w => console.error(`  - ${w}`));
   }
+
+  if (command === 'mcp') {
+    // MCP server mode - full server with all tools
+    const server = await createCodeSenseServer(targetDir, effectiveConfig);
+    await server.start();
+    return;
+  }
+
+  if (command === 'scan') {
+    // Scan mode - index the codebase
+    console.log(`🔍 Scanning ${targetDir}...`);
+    
+    // Initialize Memgraph
+    const schemaPath = path.join(__dirname, 'db', 'schema.cypher');
+    const db = createMemgraphAdapter(effectiveConfig.memgraph, {
+      batchSize: effectiveConfig.indexing.dbBatchSize
+    });
+    
+    // Verify connection
+    const connected = await db.verifyConnection();
+    if (!connected) {
+      console.error('❌ Failed to connect to Memgraph. Is it running?');
+      console.error('   Start with: docker-compose up -d memgraph');
+      process.exit(1);
+    }
+    console.log('✅ Connected to Memgraph');
+    
+    // Initialize schema
+    await db.initSchema(schemaPath);
+    console.log('✅ Schema initialized');
+    
+    // Run indexing
+    const indexManager = await createIndexManager(db, effectiveConfig);
+    const result = await indexManager.runIndexing(targetDir);
+    
+    // Get stats
+    const stats = await db.getStats();
+    
+    console.log(`\n✅ Indexing complete.`);
+    console.log(`   Files: ${stats.files?.total || 0}`);
+    console.log(`   Chunks: ${stats.chunks?.total || 0}`);
+    console.log(`   IMPORTS edges: ${stats.edges?.IMPORTS || 0}`);
+    console.log(`   CALLS edges: ${stats.edges?.CALLS || 0}`);
+    console.log(`   CONTAINS edges: ${stats.edges?.CONTAINS || 0}`);
+    
+    await db.close();
+    return;
+  }
+
+  // Show usage
+  console.log('CodeSense - AI-powered codebase understanding engine\n');
+  console.log('Usage:');
+  console.log('  node src/index.js scan [/path/to/project]  - Scan and index the project');
+  console.log('  node src/index.js mcp [/path/to/project]   - Start the MCP server');
+  console.log('\nPrerequisites:');
+  console.log('  - Memgraph running: docker-compose up -d memgraph');
+  console.log('  - Optional: Memgraph Lab UI at http://localhost:3000');
 }
 
-main();
+main().catch(err => {
+  console.error('Error:', err.message);
+  process.exit(1);
+});

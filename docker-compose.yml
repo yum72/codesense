@@ -1,0 +1,80 @@
+# CodeSense Docker Compose Configuration
+# Memgraph-based codebase understanding engine
+#
+# Usage:
+#   export CODEBASE_PATH=/path/to/your/codebase
+#   export LLM_API_KEY=your-api-key
+#   docker-compose up -d
+
+services:
+  memgraph:
+    image: memgraph/memgraph-mage:latest
+    container_name: codesense-memgraph
+    ports:
+      - "7687:7687"   # Bolt protocol
+      - "7444:7444"   # Monitoring
+    volumes:
+      - memgraph-data:/var/lib/memgraph
+      - memgraph-log:/var/log/memgraph
+    command: ["--log-level=WARNING"]
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "7687"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - codesense-network
+
+  memgraph-lab:
+    image: memgraph/lab:latest
+    container_name: codesense-memgraph-lab
+    ports:
+      - "3000:3000"
+    depends_on:
+      memgraph:
+        condition: service_healthy
+    environment:
+      - QUICK_CONNECT_MG_HOST=memgraph
+      - QUICK_CONNECT_MG_PORT=7687
+    restart: unless-stopped
+    networks:
+      - codesense-network
+
+  codesense:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: codesense-server
+    depends_on:
+      memgraph:
+        condition: service_healthy
+    volumes:
+      - ${CODEBASE_PATH:-.}:/workspace:ro
+      - codesense-config:/app/config
+    environment:
+      - MEMGRAPH_URL=bolt://memgraph:7687
+      - CODEBASE_PATH=/workspace
+      - LLM_PROVIDER=${LLM_PROVIDER:-openrouter}
+      - LLM_API_KEY=${LLM_API_KEY}
+      - LLM_MODEL=${LLM_MODEL:-anthropic/claude-3-haiku}
+      - NODE_ENV=production
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    networks:
+      - codesense-network
+
+volumes:
+  memgraph-data:
+    name: codesense-memgraph-data
+  memgraph-log:
+    name: codesense-memgraph-log
+  codesense-config:
+    name: codesense-config
+
+networks:
+  codesense-network:
+    name: codesense-network
+    driver: bridge

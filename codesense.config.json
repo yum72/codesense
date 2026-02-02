@@ -1,0 +1,47 @@
+{
+  "indexing": {
+    "enabled": true,
+    "maxTier": 2,
+    "scanBatchSize": 50,
+    "dbBatchSize": 100,
+    "maxFileSizeKb": 500,
+    "ignoredDirs": ["node_modules", "dist", ".git", "build", "out", "coverage"]
+  },
+  "enrichment": {
+    "enabled": true,
+    "backgroundQueue": true,
+    "onDemand": true,
+    "dailyLimit": 1000,
+    "batchSize": 5,
+    "maxRetries": 3
+  },
+  "search": {
+    "semantic": true,
+    "structural": true,
+    "grep": true,
+    "queryUnderstanding": true,
+    "defaultLimit": 10,
+    "maxContextTokens": 8000
+  },
+  "planning": {
+    "enabled": true,
+    "persistence": true,
+    "bugInvestigator": true,
+    "diffValidator": true
+  },
+  "graph": {
+    "enabled": true,
+    "metrics": true
+  },
+  "llm": {
+    "enabled": true,
+    "provider": "openrouter",
+    "model": "gmicloud/deepseek-v3-0324:fp8",
+    "embeddingModel": "Xenova/all-MiniLM-L6-v2",
+    "embeddingDimension": 384
+  },
+  "logging": {
+    "level": "info",
+    "verbose": false
+  }
+}
