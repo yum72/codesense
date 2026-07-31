@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import path from 'node:path';
 import { createMemgraphAdapter } from './db/memgraph-adapter.js';
 import { createIndexManager } from './indexing/index-manager.js';
