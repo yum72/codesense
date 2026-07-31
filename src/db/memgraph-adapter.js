@@ -146,13 +146,23 @@ export function createMemgraphAdapter(config, options = {}) {
    */
   const initSchema = async (schemaPath) => {
     const schema = fs.readFileSync(schemaPath, 'utf-8');
-    
-    // Split by semicolons and filter empty statements
+
+    // Split by semicolons, then strip comment lines from each segment.
+    // Stripping has to happen per line rather than per segment: splitting on ';'
+    // leaves the comments that preceded a statement attached to the front of it,
+    // so discarding any segment that starts with '//' throws away the statement
+    // as well. That silently dropped every constraint and the vector index.
     const statements = schema
       .split(';')
-      .map(s => s.trim())
-      .filter(s => s.length > 0 && !s.startsWith('//'));
-    
+      .map(segment =>
+        segment
+          .split('\n')
+          .filter(line => !line.trim().startsWith('//'))
+          .join('\n')
+          .trim()
+      )
+      .filter(s => s.length > 0);
+
     const session = getSession();
     try {
       for (const statement of statements) {
