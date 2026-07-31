@@ -1,15 +1,24 @@
 {
   "name": "codesense",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
     "start": "node src/index.js",
     "dev": "node --watch src/index.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "code-search",
+    "graph",
+    "memgraph",
+    "ast",
+    "tree-sitter",
+    "llm"
+  ],
+  "author": "Hamza Rahman",
   "license": "MIT",
   "description": "Your codebase's local brain.",
   "type": "module",
@@ -19,12 +28,10 @@
     "@vscode/ripgrep": "^1.17.0",
     "@xenova/transformers": "^2.17.2",
     "ai": "^5.0.115",
-    "better-sqlite3": "^12.5.0",
     "dotenv": "^17.2.3",
     "fast-glob": "^3.3.3",
     "neo4j-driver": "^5.27.0",
     "ollama-ai-provider": "^1.2.0",
-    "sqlite-vec": "^0.1.7-alpha.2",
     "tree-sitter-javascript": "^0.25.0",
     "tree-sitter-typescript": "^0.23.2",
     "web-tree-sitter": "^0.26.3",
@@ -35,5 +42,22 @@
   },
   "devDependencies": {
     "vitest": "^4.0.16"
-  }
+  },
+  "bin": {
+    "codesense": "src/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yum72/codesense.git"
+  },
+  "homepage": "https://github.com/yum72/codesense#readme",
+  "bugs": {
+    "url": "https://github.com/yum72/codesense/issues"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE",
+    "codesense.config.example.json"
+  ]
 }

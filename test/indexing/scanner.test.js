@@ -1,34 +1,33 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { createFileScanner } from '../../src/indexing/scanner.js';
-import { createDatabaseAdapter } from '../../src/db/adapter.js';
 import path from 'node:path';
-import fs from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootPath = path.resolve(__dirname, '../../test/fixtures/project1');
-const dbPath = path.join(__dirname, 'test.db');
-const schemaPath = path.resolve(__dirname, '../../src/db/schema.sql');
+
+/**
+ * Minimal in-memory stand-in for the store. The scanner only needs somewhere to
+ * put file hashes and somewhere to read them back, so these tests stay unit
+ * tests instead of dragging in a real database.
+ */
+const createFakeStore = () => {
+  const files = new Map();
+  return {
+    upsertFiles: (entries) => {
+      for (const entry of entries) files.set(entry.path, entry.hash);
+    },
+    getAllFileHashes: () => new Map(files)
+  };
+};
 
 describe('FileScanner', () => {
   let db;
   let scanner;
 
   beforeEach(() => {
-    db = createDatabaseAdapter(dbPath);
-    db.initSchema(schemaPath);
+    db = createFakeStore();
     scanner = createFileScanner();
-  });
-
-  afterEach(async () => {
-    db.close();
-    try {
-      await fs.unlink(dbPath);
-      await fs.unlink(`${dbPath}-wal`);
-      await fs.unlink(`${dbPath}-shm`);
-    } catch (e) {
-      // Ignore
-    }
   });
 
   describe('scan', () => {
@@ -155,8 +154,8 @@ describe('FileScanner', () => {
     });
   });
 
-  describe('integration with DB adapter', () => {
-    it('should work with db.getAllFileHashes()', async () => {
+  describe('integration with the file store', () => {
+    it('should work with getAllFileHashes()', async () => {
       // First scan - populate DB
       const entries = await scanner.scan(rootPath);
       db.upsertFiles(entries);
