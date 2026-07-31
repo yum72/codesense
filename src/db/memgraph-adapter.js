@@ -376,7 +376,11 @@ export function createMemgraphAdapter(config, options = {}) {
       MATCH (f:File {path: $path})
       UNWIND $definitions AS def
       CREATE (d:Definition {
-        id: $path + '::' + def.name + '::' + def.type,
+        // start_line is part of the id because name+type is not unique within a
+        // file: same-named locals in different scopes ("const results") collide
+        // and violate the uniqueness constraint. The chunker and index-builder
+        // already key definitions by file:name:startLine, so this matches them.
+        id: $path + '::' + def.name + '::' + def.type + '::' + def.startLine,
         file_id: $path,
         name: def.name,
         type: def.type,
