@@ -3,7 +3,10 @@ import dotenv from 'dotenv';
 import fs from 'node:fs';
 import path from 'node:path';
 
-dotenv.config();
+// quiet: true matters. In MCP mode the server speaks JSON-RPC over stdout, and
+// dotenv's default startup banner goes to stdout too, which corrupts the very
+// first message a client reads.
+dotenv.config({ quiet: true });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Schema Definitions

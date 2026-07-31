@@ -12,9 +12,11 @@ async function main() {
   const command = args[0];
   const targetDir = args[1] ? path.resolve(args[1]) : process.cwd();
 
-  // Load configuration
-  const { effectiveConfig, warnings } = loadConfig({ startDir: targetDir });
-  
+  // Load configuration. loadConfig can print warnings itself, but this entry
+  // point already reports them below, so suppress its copy to avoid printing
+  // every warning twice.
+  const { effectiveConfig, warnings } = loadConfig({ startDir: targetDir, logWarnings: false });
+
   if (warnings.length > 0) {
     console.error('Configuration warnings:');
     warnings.forEach(w => console.error(`  - ${w}`));
