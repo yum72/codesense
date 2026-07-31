@@ -81,8 +81,14 @@ export function createGraphBuilder(db, resolver) {
       const sourceChunkId = findContainingChunk(call.line);
       if (!sourceChunkId) continue; // Skip if we can't find the source chunk
 
-      // Find target chunks with matching name
-      const targetLocations = maps.chunkIndex?.get(call.name) || [];
+      // Find target chunks with matching name. Member calls arrive dotted
+      // ("db.addFileImport") while chunks are indexed under the bare
+      // declaration name ("addFileImport"), so fall back to the last segment.
+      const bareName = call.name.includes('.')
+        ? call.name.slice(call.name.lastIndexOf('.') + 1)
+        : call.name;
+      const targetLocations =
+        maps.chunkIndex?.get(call.name) || maps.chunkIndex?.get(bareName) || [];
       
       // Link to chunks that are in different files or exported
       for (const loc of targetLocations) {

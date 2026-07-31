@@ -276,13 +276,6 @@ export async function createIndexManager(db, config) {
       console.log('Tier 1: Parsing AST...');
       results.tier1 = await _runTier1(rootPath);
       console.log(`  Parsed: ${results.tier1.parsed}, Failed: ${results.tier1.failed}`);
-
-      // Graph building (depends on Tier 1)
-      if (config.graph?.enabled) {
-        console.log('Building dependency graph...');
-        results.graph = await _runGraphBuilding(rootPath);
-        console.log(`  Files: ${results.graph.filesProcessed}, Edges: ${results.graph.edgesCreated}`);
-      }
     }
 
     // Tier 2: Embeddings
@@ -291,6 +284,16 @@ export async function createIndexManager(db, config) {
       results.tier2 = await _runTier2();
       console.log(`  Files: ${results.tier2.filesProcessed}, Chunks: ${results.tier2.chunksCreated}, ` +
                   `Failed: ${results.tier2.failed}`);
+    }
+
+    // Graph building. Runs last because it needs both tiers: IMPORTS edges come
+    // from the Tier 1 AST, but CALLS edges connect Chunk nodes, which only exist
+    // once Tier 2 has run. Building before Tier 2 leaves the chunk index empty
+    // and silently produces zero CALLS edges.
+    if (maxTier >= 1 && config.graph?.enabled) {
+      console.log('Building dependency graph...');
+      results.graph = await _runGraphBuilding(rootPath);
+      console.log(`  Files: ${results.graph.filesProcessed}, Edges: ${results.graph.edgesCreated}`);
     }
 
     results.endTime = Date.now();
