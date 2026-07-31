@@ -227,14 +227,14 @@ export function validateConfig(config) {
   // ─────────────────────────────────────────────────────────────────────────
   // Check: Research Agent requires LLM and enrichment
   // ─────────────────────────────────────────────────────────────────────────
-  if (config.researchAgent.enabled && !config.llm.enabled) {
+  if (config.researchAgent?.enabled && !config.llm.enabled) {
     warnings.push(
       `researchAgent.enabled requires llm.enabled, research agent will be disabled`
     );
     effective.researchAgent.enabled = false;
   }
 
-  if (config.researchAgent.enabled && !config.enrichment.enabled) {
+  if (config.researchAgent?.enabled && !config.enrichment.enabled) {
     warnings.push(
       `researchAgent.enabled requires enrichment.enabled, research agent will be disabled`
     );
@@ -244,8 +244,8 @@ export function validateConfig(config) {
   // ─────────────────────────────────────────────────────────────────────────
   // Check: Research Agent context tiers require graph
   // ─────────────────────────────────────────────────────────────────────────
-  if (config.researchAgent.enabled && 
-      config.researchAgent.contextTiers.partial && 
+  if (config.researchAgent?.enabled &&
+      config.researchAgent.contextTiers?.partial &&
       !config.graph.enabled) {
     warnings.push(
       `researchAgent.contextTiers.partial requires graph.enabled, partial context will be disabled`
