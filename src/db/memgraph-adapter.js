@@ -806,7 +806,7 @@ export function createMemgraphAdapter(config, options = {}) {
              c.pagerank as pagerank, inDegree
       ORDER BY c.pagerank DESC NULLS LAST, inDegree DESC
       LIMIT $limit
-    `, { limit });
+    `, { limit: neo4j.int(limit) });
     
     return results;
   };
@@ -863,7 +863,7 @@ export function createMemgraphAdapter(config, options = {}) {
              q.attempts as attempts
       ORDER BY q.priority DESC
       LIMIT $limit
-    `, { limit, now });
+    `, { limit: neo4j.int(limit), now });
     
     return results;
   };
@@ -1019,7 +1019,7 @@ export function createMemgraphAdapter(config, options = {}) {
              c.enrichment as enrichment
       ORDER BY c.pagerank DESC
       LIMIT $limit
-    `, { limit });
+    `, { limit: neo4j.int(limit) });
     
     return results.map(r => ({
       id: r.id,
