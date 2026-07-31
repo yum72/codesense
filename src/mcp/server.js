@@ -375,10 +375,10 @@ export async function createCodeSenseServer(rootPath, userConfig = null) {
 
   tools.push({
     name: 'compute_graph_analytics',
-    description: effectiveConfig.graphAnalytics?.computePageRank
+    description: effectiveConfig.graph?.metrics
       ? 'Compute PageRank and community detection for the codebase graph. ' +
         'Should be run after indexing to enable hub function detection.'
-      : 'DISABLED: Graph analytics is disabled in config.',
+      : 'DISABLED: Graph analytics is disabled in config (graph.metrics).',
     inputSchema: { type: 'object', properties: {} }
   });
 
@@ -612,21 +612,22 @@ export async function createCodeSenseServer(rootPath, userConfig = null) {
         }
 
         case 'compute_graph_analytics': {
-          if (!effectiveConfig.graphAnalytics?.computePageRank) {
+          // Gated on graph.metrics. An earlier revision read a graphAnalytics
+          // section that the config schema never defined, so the check was
+          // always undefined and this tool could not be run at all.
+          if (!effectiveConfig.graph?.metrics) {
             return {
-              content: [{ 
-                type: 'text', 
-                text: JSON.stringify({ 
-                  error: featureDisabledError('graphAnalytics', 'graphAnalytics.computePageRank is false') 
-                }) 
+              content: [{
+                type: 'text',
+                text: JSON.stringify({
+                  error: featureDisabledError('graph', 'graph.metrics is false')
+                })
               }]
             };
           }
-          
+
           const pageRankCount = await db.computePageRank();
-          const communityCount = effectiveConfig.graphAnalytics?.computeCommunities
-            ? await db.detectCommunities()
-            : 0;
+          const communityCount = await db.detectCommunities();
           
           return {
             content: [{ 
