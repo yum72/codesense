@@ -17,8 +17,11 @@ services:
       - memgraph-data:/var/lib/memgraph
       - memgraph-log:/var/log/memgraph
     command: ["--log-level=WARNING"]
+    # memgraph-mage ships no netcat, so a "nc -z" probe can never pass and every
+    # depends_on: service_healthy waits forever. Ask the query engine instead,
+    # which also proves it is actually answering rather than just listening.
     healthcheck:
-      test: ["CMD", "nc", "-z", "localhost", "7687"]
+      test: ["CMD-SHELL", "echo 'RETURN 1;' | mgconsole --output-format=csv || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 10
